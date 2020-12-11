@@ -3,11 +3,10 @@ package ru.vez;
 import com.aspose.pdf.Color;
 import com.aspose.pdf.Document;
 import com.aspose.pdf.DocumentInfo;
-import com.aspose.pdf.Font;
 import com.aspose.pdf.FontRepository;
 import com.aspose.pdf.FontStyles;
+import com.aspose.pdf.HorizontalAlignment;
 import com.aspose.pdf.Page;
-import com.aspose.pdf.PageInfo;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextStamp;
 
@@ -18,12 +17,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Main {
 
     private static final String DIRECTOR_FILE = "/home/osboxes/tmp/director.txt";
-    private static final Font FONT = FontRepository.findFont("Arial");
+    private static final String ENGINEER_FILE = "/home/osboxes/tmp/engineer.txt";
     private static final float FONT_SIZE = 12.0F;
 
     public static void main(String[] args) throws IOException {
@@ -31,14 +29,16 @@ public class Main {
         // Initialize document object
         Document doc = createDocumentWithPages(4);
 
-        // create strings to be added to stamp
+        // add left stamps to document
         List<String> directorStrings = Files.readAllLines(Paths.get(DIRECTOR_FILE));
+        Document directorStamped = Main.addStampsToDocument(doc, directorStrings, HorizontalAlignment.Left);
 
-        // add stamps to document
-        Document docStamped = addStringStampsToDocument(doc, directorStrings);
+        // add right stamps to document
+        List<String> engineerStrings = Files.readAllLines(Paths.get(ENGINEER_FILE));
+        Document allStamped = Main.addStampsToDocument(directorStamped, engineerStrings, HorizontalAlignment.Right);
 
         // save output document
-        docStamped.save("TextStamp_output.pdf");
+        allStamped.save("TextStamp_output.pdf");
     }
 
     private static Document createDocumentWithPages(int pageAmount) {
@@ -51,71 +51,99 @@ public class Main {
         docInfo.setTitle("vzateychuk title");
 
         //Add page
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < pageAmount; i++) {
             Page page = doc.getPages().add();
-            PageInfo pageInfo = page.getPageInfo();
-            // Add text to new page
+           // Add text to new page
             page.getParagraphs().add(new TextFragment("Hello page: " + i));
+            page.getParagraphs().add(new TextFragment("// For complete examples and data files, " +
+                "please go to https://github.com/aspose-pdf/Aspose.Pdf-for-Java\n" +
+                "// Create Document instance\n" +
+                "Document doc = new Document();\n" +
+                "// Add page to pages collection of PDF file\n" +
+                "Page page = doc.getPages().add();\n" +
+                "// set page margin on all sides as 0\n" +
+                "page.getPageInfo().getMargin().setLeft(0);\n" +
+                "page.getPageInfo().getMargin().setRight(0);\n" +
+                "page.getPageInfo().getMargin().setBottom(0);\n" +
+                "page.getPageInfo().getMargin().setTop(0);\n" +
+                "// create Graph object with Width and Height equal to page dimensions\n" +
+                "Graph graph = new Graph((float) page.getPageInfo().getWidth(), (float) page.getPageInfo().getHeight());\n" +
+                "// create first line object starting from Lower-Left to Top-Right corner of page\n" +
+                "Line line = new Line(new float[] { (float) page.getRect().getLLX(), 0, (float) page.getPageInfo().getWidth(), (float) page.getRect().getURY() });\n" +
+                "// add line to shapes collection of Graph object\n" +
+                "graph.getShapes().add(line);\n" +
+                "// draw line from Top-Left corner of page to Bottom-Right corner of page\n" +
+                "Line line2 = new Line(new float[] { 0, (float) page.getRect().getURY(), (float) page.getPageInfo().getWidth(), (float) page.getRect().getLLX() });\n" +
+                "// add line to shapes collection of Graph object\n" +
+                "graph.getShapes().add(line2);\n" +
+                "// add Graph object to paragraphs collection of page\n" +
+                "page.getParagraphs().add(graph);\n" +
+                "// save resultant PDF file\n" +
+                "doc.save(\"Line_Across_Page.pdf\");"));
         }
         return doc;
     }
 
-    private static Document addStringStampsToDocument(Document doc, List<String> strings) {
-        // calculate position
-        final double originX = 10;
-        final double originY = 10;
-        final float offset = 1.2f;
+    private static Document addStampsToDocument(Document doc, List<String> strings, int horizontalAlignment) {
 
-        // reverse original string
-        List<String> reversed = new ArrayList<>(strings);
-        Collections.reverse(reversed);
+        // create stamps from List of strings
+        List<TextStamp> textStamps = Main.createTextStampsAligned(strings, horizontalAlignment);
 
-        // create stamps
-        List<TextStamp> textStamps = reversed.stream()
-            .map(Main::createTextStamp)
-            .collect(Collectors.toList());
-
-        // add stamps to particular page
+        // iterate through and add stamps to pages
         for (int i = 1; i < doc.getPages().size()+1; i++) {
 
             Page page = doc.getPages().get_Item(i);
-
-            for (int j = 0; j < textStamps.size(); j++) {
-                TextStamp stamp = textStamps.get(j);
-
-                double yIntent = (FONT_SIZE + offset) * j + originY;
-                stamp.setXIndent(originX);
-                stamp.setYIndent(yIntent);
-
-                page.addStamp(stamp);
-            }
-
+            textStamps.forEach(page::addStamp);
         }
-
+        // return modified document
         return doc;
     }
 
-    private static TextStamp createTextStamp(String string) {
+    private static List<TextStamp> createTextStampsAligned(List<String> strings, int horizontalAlignment) {
 
-        TextStamp textStamp = new TextStamp(string);
+        // reverse original string
+        List<String> reversedStrings = new ArrayList<>(strings);
+        Collections.reverse(reversedStrings);
+
+        // create list of stamps aligned by Y
+        final float lineOffset = 1.2f;
+        final float yOffset = 10;
+        List<TextStamp> stamps = new ArrayList<>();
+        for (int idx = 0; idx < reversedStrings.size(); idx++) {
+
+            float yIntent = (FONT_SIZE + lineOffset) * idx + yOffset;
+            TextStamp stamp = Main.createTextStampAligned(reversedStrings.get(idx), horizontalAlignment, yIntent);
+            stamps.add(stamp);
+        }
+
+        return stamps;
+    }
+
+    private static TextStamp createTextStampAligned(String string, int horizontalAlignment, float yIntent) {
+
+        TextStamp stamp = new TextStamp(string);
 
         // set whether stamp is background
-        textStamp.setBackground(true);
+        stamp.setBackground(true);
 
-        // set origin
-        textStamp.setXIndent(10);
-        textStamp.setYIndent(10);
+        // set horizontalAlignment
+        stamp.setHorizontalAlignment(horizontalAlignment);
 
-        // rotate stamp
-        // textStamp.setRotate(Rotation.on90);
+        // set margins
+        stamp.setLeftMargin(10);
+        stamp.setRightMargin(10);
+
+        // set Y intent
+        stamp.setYIndent(yIntent);
+
         // set text properties
-        textStamp.getTextState().setFont(FontRepository.findFont("Arial"));
-        textStamp.getTextState().setFontSize(FONT_SIZE);
-        textStamp.getTextState().setFontStyle(FontStyles.Bold);
-        textStamp.getTextState().setFontStyle(FontStyles.Italic);
-        textStamp.getTextState().setForegroundColor(Color.getBlue());
+        stamp.getTextState().setFont(FontRepository.findFont("Arial"));
+        stamp.getTextState().setFontSize(FONT_SIZE);
+        stamp.getTextState().setFontStyle(FontStyles.Bold);
+        stamp.getTextState().setFontStyle(FontStyles.Italic);
+        stamp.getTextState().setForegroundColor(Color.getBlue());
 
-        return textStamp;
+        return stamp;
     }
 
 }
