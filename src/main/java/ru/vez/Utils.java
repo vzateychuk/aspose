@@ -36,7 +36,6 @@ public class Utils {
 
     static TextStamp createTextStamp(FormattedText text) {
 
-
         TextStamp stamp = new TextStamp(text);
 
         // set whether stamp is background

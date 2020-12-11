@@ -18,12 +18,13 @@ import java.util.List;
 
 public class LineObjectPdf {
     private static final String DIRECTOR_FILE = "/home/osboxes/tmp/director.txt";
+    private static final String ENGINEER_FILE = "/home/osboxes/tmp/engineer.txt";
 
     public static void main(String[] args) throws IOException {
         // Create Document instance
-        Document doc = createStampedDocFrom( Files.readAllLines(Paths.get(DIRECTOR_FILE)) );
+        Document stampedPdf = createStampedDocFrom( Files.readAllLines(Paths.get(ENGINEER_FILE)) );
         // save resultant PDF file
-        doc.save("Line_Across_Page.pdf");
+        stampedPdf.save("StampedPdf.pdf");
     }
 
     private static Document createStampedDocFrom(List<String> strings) {
@@ -35,10 +36,10 @@ public class LineObjectPdf {
         page.setPageSize(200, 100);
 
         // set page margin on all sides as 0
-        page.getPageInfo().getMargin().setLeft(10);
-        page.getPageInfo().getMargin().setRight(10);
-        page.getPageInfo().getMargin().setBottom(10);
-        page.getPageInfo().getMargin().setTop(10);
+        page.getPageInfo().getMargin().setLeft(5);
+        page.getPageInfo().getMargin().setRight(5);
+        page.getPageInfo().getMargin().setBottom(5);
+        page.getPageInfo().getMargin().setTop(5);
 
         // create Graph object with Width and Height equal to page dimensions
         PageInfo pageInfo = page.getPageInfo();
