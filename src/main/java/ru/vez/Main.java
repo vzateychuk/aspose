@@ -1,28 +1,23 @@
 package ru.vez;
 
-import com.aspose.pdf.Color;
 import com.aspose.pdf.Document;
 import com.aspose.pdf.DocumentInfo;
-import com.aspose.pdf.FontRepository;
-import com.aspose.pdf.FontStyles;
 import com.aspose.pdf.HorizontalAlignment;
 import com.aspose.pdf.Page;
+import com.aspose.pdf.PdfPageStamp;
 import com.aspose.pdf.TextFragment;
 import com.aspose.pdf.TextStamp;
+import com.aspose.pdf.facades.FormattedText;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 public class Main {
 
     private static final String DIRECTOR_FILE = "/home/osboxes/tmp/director.txt";
     private static final String ENGINEER_FILE = "/home/osboxes/tmp/engineer.txt";
-    private static final float FONT_SIZE = 12.0F;
 
     public static void main(String[] args) throws IOException {
 
@@ -30,16 +25,38 @@ public class Main {
         Document doc = createDocumentWithPages(4);
 
         // add left stamps to document
-        List<String> directorStrings = Files.readAllLines(Paths.get(DIRECTOR_FILE));
-        Document directorStamped = Main.addStampsToDocument(doc, directorStrings, HorizontalAlignment.Left);
+        FormattedText directorText = Utils.createFormattedText( Files.readAllLines(Paths.get(DIRECTOR_FILE)) );
+        TextStamp directorStamp = Utils.createTextStamp(directorText);
+        directorStamp.setHorizontalAlignment(HorizontalAlignment.Left);
+        Document directorStampedDoc = Utils.addStampToDocumentPages(doc, directorStamp);
 
         // add right stamps to document
-        List<String> engineerStrings = Files.readAllLines(Paths.get(ENGINEER_FILE));
-        Document allStamped = Main.addStampsToDocument(directorStamped, engineerStrings, HorizontalAlignment.Right);
+        FormattedText engineerText = Utils.createFormattedText( Files.readAllLines(Paths.get(ENGINEER_FILE)) );
+        TextStamp engineerStamp = Utils.createTextStamp(engineerText);
+        engineerStamp.setHorizontalAlignment(HorizontalAlignment.Right);
+        Document engineerStampedDoc = Utils.addStampToDocumentPages(directorStampedDoc, engineerStamp);
+
+        Document stampPdfDoc = new Document("Line_Across_Page.pdf");
+        Document allStampedDoc = Main.addPdfStampToDoc(engineerStampedDoc, stampPdfDoc);
 
         // save output document
-        allStamped.save("TextStamp_output.pdf");
+        allStampedDoc.save("TextStamp_output.pdf");
     }
+
+    private static Document addPdfStampToDoc(Document doc, Document stampPdf) {
+        PdfPageStamp pageStamp = new PdfPageStamp(stampPdf.getPages().get_Item(1));
+
+        // iterate through and add stamps to pages
+        for (int i = 1; i < doc.getPages().size()+1; i++) {
+
+            Page page = doc.getPages().get_Item(i);
+            page.addStamp(pageStamp);
+        }
+        // return modified document
+        return doc;
+    }
+
+    // region Private
 
     private static Document createDocumentWithPages(int pageAmount) {
         Document doc = new Document();
@@ -53,7 +70,7 @@ public class Main {
         //Add page
         for (int i = 0; i < pageAmount; i++) {
             Page page = doc.getPages().add();
-           // Add text to new page
+            // Add text to new page
             page.getParagraphs().add(new TextFragment("Hello page: " + i));
             page.getParagraphs().add(new TextFragment("// For complete examples and data files, " +
                 "please go to https://github.com/aspose-pdf/Aspose.Pdf-for-Java\n" +
@@ -84,66 +101,5 @@ public class Main {
         return doc;
     }
 
-    private static Document addStampsToDocument(Document doc, List<String> strings, int horizontalAlignment) {
-
-        // create stamps from List of strings
-        List<TextStamp> textStamps = Main.createTextStampsAligned(strings, horizontalAlignment);
-
-        // iterate through and add stamps to pages
-        for (int i = 1; i < doc.getPages().size()+1; i++) {
-
-            Page page = doc.getPages().get_Item(i);
-            textStamps.forEach(page::addStamp);
-        }
-        // return modified document
-        return doc;
-    }
-
-    private static List<TextStamp> createTextStampsAligned(List<String> strings, int horizontalAlignment) {
-
-        // reverse original string
-        List<String> reversedStrings = new ArrayList<>(strings);
-        Collections.reverse(reversedStrings);
-
-        // create list of stamps aligned by Y
-        final float lineOffset = 1.2f;
-        final float yOffset = 10;
-        List<TextStamp> stamps = new ArrayList<>();
-        for (int idx = 0; idx < reversedStrings.size(); idx++) {
-
-            float yIntent = (FONT_SIZE + lineOffset) * idx + yOffset;
-            TextStamp stamp = Main.createTextStampAligned(reversedStrings.get(idx), horizontalAlignment, yIntent);
-            stamps.add(stamp);
-        }
-
-        return stamps;
-    }
-
-    private static TextStamp createTextStampAligned(String string, int horizontalAlignment, float yIntent) {
-
-        TextStamp stamp = new TextStamp(string);
-
-        // set whether stamp is background
-        stamp.setBackground(true);
-
-        // set horizontalAlignment
-        stamp.setHorizontalAlignment(horizontalAlignment);
-
-        // set margins
-        stamp.setLeftMargin(10);
-        stamp.setRightMargin(10);
-
-        // set Y intent
-        stamp.setYIndent(yIntent);
-
-        // set text properties
-        stamp.getTextState().setFont(FontRepository.findFont("Arial"));
-        stamp.getTextState().setFontSize(FONT_SIZE);
-        stamp.getTextState().setFontStyle(FontStyles.Bold);
-        stamp.getTextState().setFontStyle(FontStyles.Italic);
-        stamp.getTextState().setForegroundColor(Color.getBlue());
-
-        return stamp;
-    }
-
+    // endregion
 }
