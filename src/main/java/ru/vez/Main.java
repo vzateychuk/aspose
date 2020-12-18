@@ -94,6 +94,8 @@ public class Main {
 
     private static Document createPdfStampWithText(List<String> strings) {
 
+//        byte[] bytes = "aaa".getBytes();
+//        Document doc = new Document(new ByteArrayInputStream(bytes));
         Document doc = new Document();
 
         // Add page to pages collection of PDF file

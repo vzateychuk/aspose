@@ -39,10 +39,7 @@ public class Utils {
         TextStamp stamp = new TextStamp(text);
 
         // set whether stamp is background
-        stamp.setBackground(true);
-
-        // set horizontalAlignment
-        // stamp.setHorizontalAlignment(horizontalAlignment);
+        stamp.setBackground(false);
 
         // set margins
         stamp.setLeftMargin(10);
